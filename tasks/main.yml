@@ -1,56 +1,65 @@
 ---
 - name: install python mysqldb module to manage users
-  zypper: name=python-MySQL-python state=present
+  ansible.builtin.zypper:
+    name: python-MySQL-python
+    state: present
   when: ansible_os_family == 'openSUSE'
 
 - name: install mariadb
-  zypper: name=mariadb state=present
+  ansible.builtin.zypper:
+    name: mariadb
+    state: present
   notify: enable mariadb
   when: ansible_os_family == 'openSUSE'
 
 - name: configure mariadb
-  template:
-     src: my.cnf.j2
-     dest: /etc/my.cnf
-     owner: root
-     group: mysql
-     mode: 0640
-  notify:
-  - service mysql restart
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: /etc/my.cnf
+    owner: root
+    group: mysql
+    mode: '0640'
+  notify: service mysql restart
   when: ansible_os_family == 'openSUSE'
 
 # Debian
-- name: install python mysqldb module to manage users
-  apt: name=python-mysqldb state=present
-  when: ansible_os_family == 'Debian'
-
-- name: install mysql
-  apt: name={{ item }} state=present
+- name: install mysql and python module to manage users
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
   notify: service mysql enable
   with_items:
-    - mysql-server
-    - mysql-client
+    - mariadb-server
+    - mariadb-client
+    - python3-mysqldb
   when: ansible_os_family == 'Debian'
 
 - name: configure mysql
-  template:
-     src: Debian.my.cnf.j2
-     dest: /etc/mysql/my.cnf
-     owner: root
-     group: mysql
-     mode: 0640
+  ansible.builtin.template:
+    src: Debian.my.cnf.j2
+    dest: /etc/mysql/my.cnf
+    owner: root
+    group: mysql
+    mode: '0640'
   notify: service mysql restart
   when: ansible_os_family == 'Debian'
 
+- name: ensure mariadb is enabled and running
+  ansible.builtin.service:
+    name: mariadb
+    state: started
+    enabled: true
+
 - name: set root password
-  command: mysql --defaults-file=/etc/mysql/debian.cnf -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('{{ mysql.password.root }}')"
+  ansible.builtin.command: >
+    mysql --defaults-file=/etc/mysql/debian.cnf -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('{{ mysql.password.root }}')"
   when: ansible_os_family == 'Debian'
 
 ## common
 - name: set root's .my.cnf
-  template:
-     src: root.my.cnf.j2
-     dest: /root/.my.cnf
-     owner: root
-     group: root
-     mode: 0600
+  ansible.builtin.template:
+    src: root.my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: '0600'

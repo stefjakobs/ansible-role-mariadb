@@ -9,7 +9,7 @@
 # socket     = /var/run/mysql/mysql.sock
 
 [mysqld]
-key_buffer         = 16M
+key_buffer_size    = 16M
 max_allowed_packet = 16M
 thread_stack       = 256K
 thread_cache_size  = 8
@@ -19,15 +19,15 @@ table_cache        = 1000
 #
 # * Query Cache Configuration
 #
-query_cache_limit  = 1M
+query_cache_limit  = 512K
 query_cache_size   = 32M
-
-# Remove leading # if you don't want to listen on network (only socket - safer)
-# skip-networking
 
 # Remove leading # and set to the amount of RAM for the most important data
 # cache in MySQL. Start at 70% of total RAM for dedicated server, else 10%.
-innodb_buffer_pool_size = {{ (ansible_memtotal_mb * 0.25 ) | round | int }}M
+innodb_buffer_pool_size = {{ (ansible_memtotal_mb * 0.35 ) | round | int }}M
+{% if (ansible_memtotal_mb * 0.35 / 1024 ) | round | int > 1 %}
+innodb_buffer_pool_instances = {{ ansible_memtotal_mb * 0.35 / 1024 ) | round | int }}
+{% endif %}
 innodb_log_file_size    = {{ (ansible_memtotal_mb * 0.2 * 0.25) | round | int }}M
 innodb_log_buffer_size  = {{ innodb_log_buffer_size | default("32M") }}
 max_allowed_packet      = {{ max_allowed_packet | default("16M") }}
@@ -40,7 +40,7 @@ innodb_file_per_table=ON
 
 # Remove leading # to turn on a very important data integrity option: logging
 # changes to the binary log between backups.
-# log_bin=mysql-bin
+log_bin=mysql-bin
 # binlog_format=mixed
 
 # Remove leading # if you want to store your database elsewhere
@@ -62,6 +62,7 @@ server-id	= 1
 # (via the "enable-named-pipe" option) will render mysqld useless!
 # 
 # skip-networking
+skip-name-resolve = 1
 
 # Remove leading # to set options mainly useful for reporting servers.
 # The server defaults are faster for transactions and fast SELECTs.
